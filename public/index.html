@@ -1,1 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Addis Market</title>
+<style>
+:root{--bg:#f6f3ec;--ink:#1d2b24;--mut:#6b756f;--card:#fff;--acc:#1f6f4a;--acc2:#e9b44c;--line:#e2ddd0}
+*{box-sizing:border-box}
+body{margin:0;font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit}
+header{display:flex;align-items:center;gap:16px;padding:14px 5vw;background:var(--ink);color:#fff;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:22px;flex:1}
+.cartbtn{background:var(--acc2);color:#1d2b24;border:0;padding:9px 16px;border-radius:20px;cursor:pointer;font-weight:bold}
+.bar{display:flex;gap:10px;flex-wrap:wrap;padding:18px 5vw 4px}
+.bar input{flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--line);border-radius:8px}
+.chip{padding:8px 14px;border:1px solid var(--line);background:#fff;border-radius:20px;cursor:pointer}
+.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px;padding:18px 5vw 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.pic{font-size:64px;text-align:center;background:var(--bg);border-radius:8px;padding:14px 0}
+.card h3{margin:6px 0 0;font-size:16px}.card small{color:var(--mut)}
+.price{font-weight:bold;color:var(--acc);font-size:18px}
+.add{margin-top:auto;background:var(--acc);color:#fff;border:0;padding:10px;border-radius:8px;cursor:pointer}
+.add:hover{background:#17573a}
+.panel{position:fixed;top:0;right:0;height:100%;width:min(420px,100%);background:#fff;box-shadow:-6px 0 30px #0003;transform:translateX(105%);transition:transform .25s;z-index:10;display:flex;flex-direction:column}
+.panel.open{transform:none}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.ph h2{margin:0;font-size:20px}.x{background:none;border:0;font-size:26px;cursor:pointer}
+.pb{flex:1;overflow:auto;padding:16px 20px}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.row .n{flex:1;font-size:14px}
+.q button{width:26px;height:26px;border:1px solid var(--line);background:#fff;border-radius:50%;cursor:pointer}
+.pf{padding:16px 20px;border-top:1px solid var(--line)}
+.tot{display:flex;justify-content:space-between;font-size:18px;font-weight:bold;margin-bottom:10px}
+.go{width:100%;background:var(--acc);color:#fff;border:0;padding:12px;border-radius:8px;cursor:pointer;font-size:16px}
+.go:disabled{opacity:.5}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 3px}
+.pb input,.pb textarea{width:100%;padding:9px;border:1px solid var(--line);border-radius:6px}
+.pay{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.pay label{display:flex;gap:10px;align-items:center;margin:0;padding:10px;border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:14px;cursor:pointer}
+.pay label:has(input:checked){border-color:var(--acc);background:#eef7f1}
+.note{background:#fff8e5;border:1px solid var(--acc2);padding:10px;border-radius:8px;font-size:13px;margin-top:8px}
+.hide{display:none}
+.shade{position:fixed;inset:0;background:#0006;z-index:9;display:none}.shade.on{display:block}
+.ok{text-align:center;padding:40px 10px}.ok .big{font-size:60px}
+.err{color:#b3261e;font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<header><h1>Addis Market</h1><button class="cartbtn" id="openCart">Cart (<span id="cnt">0</span>)</button></header>
+<div class="bar"><input id="q" placeholder="Search products"><div id="cats" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
+<main class="grid" id="grid"></main>
+<div class="shade" id="shade"></div>
+<aside class="panel" id="panel">
+  <div class="ph"><h2 id="ptitle">Your cart</h2><button class="x" id="close">×</button></div>
+  <div class="pb" id="pb"></div>
+  <div class="pf" id="pf"></div>
+</aside>
+<script>
+const $=s=>document.querySelector(s);
+let products=[],cart=JSON.parse(localStorage.getItem('cart')||'{}'),cat='All',step='cart';
+const fmt=n=>n.toLocaleString()+' ETB';
+const save=()=>{localStorage.setItem('cart',JSON.stringify(cart));render()};
+const total=()=>Object.entries(cart).reduce((s,[id,q])=>s+products.find(p=>p.id==id).price*q,0);
 
+async function init(){
+  products=await (await fetch('/api/products')).json();
+  render();
+}
+function render(){
+  const cats=['All',...new Set(products.map(p=>p.cat))];
+  $('#cats').innerHTML=cats.map(c=>`<button class="chip ${c===cat?'on':''}" data-c="${c}">${c}</button>`).join('');
+  const term=$('#q').value.toLowerCase();
+  $('#grid').innerHTML=products.filter(p=>(cat==='All'||p.cat===cat)&&p.name.toLowerCase().includes(term)).map(p=>
+   `<div class="card"><div class="pic">${p.emoji}</div><h3>${p.name}</h3><small>${p.cat}</small><div class="price">${fmt(p.price)}</div><button class="add" data-a="${p.id}">Add to cart</button></div>`).join('')||'<p>No products match your search.</p>';
+  $('#cnt').textContent=Object.values(cart).reduce((a,b)=>a+b,0);
+  if(step==='cart')drawCart();
+}
+function drawCart(){
+  $('#ptitle').textContent='Your cart';
+  const ids=Object.keys(cart);
+  $('#pb').innerHTML=ids.length?ids.map(id=>{const p=products.find(x=>x.id==id);return `<div class="row"><span>${p.emoji}</span><span class="n">${p.name}<br><small>${fmt(p.price)}</small></span><span class="q"><button data-m="${id}">−</button> ${cart[id]} <button data-p="${id}">+</button></span></div>`}).join(''):'<p>Your cart is empty. Add something from the shop.</p>';
+  $('#pf').innerHTML=`<div class="tot"><span>Total</span><span>${fmt(total())}</span></div><button class="go" id="toCheckout" ${ids.length?'':'disabled'}>Checkout</button>`;
+}
+function drawCheckout(){
+  step='checkout';$('#ptitle').textContent='Checkout';
+  $('#pb').innerHTML=`
+  <label>Full name</label><input id="f_name">
+  <label>Phone</label><input id="f_phone" type="tel" placeholder="09...">
+  <label>Email (for receipt, optional)</label><input id="f_email" type="email">
+  <label>Delivery address</label><textarea id="f_addr" rows="2"></textarea>
+  <label>Payment method</label>
+  <div class="pay">
+    <label><input type="radio" name="pay" value="cod" checked> Cash on delivery</label>
+    <label><input type="radio" name="pay" value="telebirr"> Telebirr transfer</label>
+    <label><input type="radio" name="pay" value="cbe"> CBE Birr / bank transfer</label>
+    <label><input type="radio" name="pay" value="chapa"> Pay online with Chapa (card, Telebirr, CBE)</label>
+  </div>
+  <div class="note hide" id="manual">Send <b id="amt"></b> to <b>0911 000 000</b> (Telebirr) or CBE account <b>1000 0000 0000</b>, then enter the reference below.<br><input id="f_ref" placeholder="Transaction reference" style="margin-top:8px"></div>
+  <div class="err" id="err"></div>`;
+  $('#pf').innerHTML=`<div class="tot"><span>Total</span><span>${fmt(total())}</span></div><button class="go" id="place">Place order</button><button class="chip" style="width:100%;margin-top:8px" id="back">Back to cart</button>`;
+}
+async function place(){
+  const v=id=>$('#'+id).value.trim(),pay=document.querySelector('[name=pay]:checked').value;
+  if(!v('f_name')||!v('f_phone')||!v('f_addr'))return $('#err').textContent='Enter your name, phone and address.';
+  if((pay==='telebirr'||pay==='cbe')&&!v('f_ref'))return $('#err').textContent='Enter the transaction reference.';
+  const b=$('#place');b.disabled=true;b.textContent='Placing order...';
+  try{
+    const r=await fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      name:v('f_name'),phone:v('f_phone'),email:v('f_email'),address:v('f_addr'),payment:pay,ref:$('#f_ref')?.value.trim(),
+      items:Object.entries(cart).map(([id,qty])=>({id:+id,qty}))})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error);
+    cart={};save();
+    if(d.checkout_url)return location.href=d.checkout_url;
+    $('#ptitle').textContent='Order placed';
+    $('#pb').innerHTML=`<div class="ok"><div class="big">✅</div><h2>Thank you!</h2><p>Order <b>${d.id}</b> for ${fmt(d.total)} is confirmed. We will contact you shortly.</p></div>`;
+    $('#pf').innerHTML='<button class="go" id="done">Continue shopping</button>';
+  }catch(e){$('#err').textContent=e.message;b.disabled=false;b.textContent='Place order'}
+}
+const open=()=>{$('#panel').classList.add('open');$('#shade').classList.add('on')};
+const closeP=()=>{$('#panel').classList.remove('open');$('#shade').classList.remove('on');step='cart';drawCart()};
+document.addEventListener('click',e=>{
+  const t=e.target,d=t.dataset;
+  if(d.c){cat=d.c;render()}
+  if(d.a){cart[d.a]=(cart[d.a]||0)+1;save();open()}
+  if(d.p){cart[d.p]++;save()}
+  if(d.m){if(--cart[d.m]<=0)delete cart[d.m];save()}
+  if(t.id==='openCart')open();
+  if(t.id==='close'||t.id==='shade'||t.id==='done')closeP();
+  if(t.id==='toCheckout')drawCheckout();
+  if(t.id==='back'){step='cart';drawCart()}
+  if(t.id==='place')place();
+});
+document.addEventListener('change',e=>{
+  if(e.target.name==='pay'){const m=['telebirr','cbe'].includes(e.target.value);$('#manual').classList.toggle('hide',!m);$('#amt').textContent=fmt(total())}
+});
+$('#q').addEventListener('input',render);
+init();
+</script>
+</body>
+</html>
