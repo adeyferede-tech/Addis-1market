@@ -7,7 +7,7 @@
 <div class="tabs"><button class="chip on" data-t="tp">Products</button><button class="chip" data-t="to">Orders</button><button class="chip" data-t="ts">Shop settings</button></div>
 <div id="tp"><div class="fm" id="pf">
 <input id="f_name" placeholder="Product name"><input id="f_cat" placeholder="Category (e.g. Food)"><input id="f_price" type="number" min="0" placeholder="Price (ETB)"><input id="f_stock" type="number" min="0" placeholder="Stock (empty = unlimited)">
-<input id="f_emoji" placeholder="Emoji (e.g. ☕)"><input id="f_image" placeholder="Image link (https://...)"><textarea class="w" id="f_desc" rows="2" placeholder="Description"></textarea>
+<input id="f_emoji" placeholder="Emoji (e.g. ☕)"><input id="f_image" placeholder="Image link (auto-filled after upload)"><label class="w">📷 Upload photo: <input type="file" id="f_file" accept="image/*" style="width:auto"></label><textarea class="w" id="f_desc" rows="2" placeholder="Description"></textarea>
 <label class="w"><input type="checkbox" id="f_active" checked style="width:auto"> Visible in shop</label>
 <div class="w"><button class="btn s" id="psave">Add product</button> <button class="btn o hide" id="pcancel">Cancel edit</button> <span class="err" id="perr"></span></div></div>
 <table><thead><tr><th></th><th>Name</th><th>Price</th><th>Stock</th><th>Shown</th><th></th></tr></thead><tbody id="plist"></tbody></table></div>

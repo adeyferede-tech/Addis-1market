@@ -27,3 +27,7 @@ document.addEventListener('click',async e=>{const t=e.target.closest('button');i
 });
 $('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#go').click()});
 api('/api/admin/products').then(enter).catch(showLogin);
+
+document.addEventListener('change',async e=>{if(e.target.id!=='f_file'||!e.target.files[0])return;const st=$('#perr');st.textContent='Uploading...';
+ try{const img=await createImageBitmap(e.target.files[0]),k=Math.min(1,900/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+ const d=await api('/api/admin/upload','POST',{data:c.toDataURL('image/jpeg',.82)});$('#f_image').value=d.url;st.textContent='Photo uploaded. Now click Add product / Save changes.'}catch(x){st.textContent=x.message}e.target.value=''});
