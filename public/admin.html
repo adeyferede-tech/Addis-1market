@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Admin</title><link rel="stylesheet" href="/style.css"></head><body>
+<header class="top"><a class="brand" href="/">Admin panel</a><button class="btn hide" id="logout">Log out</button></header>
+<div class="sec lg" id="login"><h2>Log in</h2><input id="pw" type="password" placeholder="Admin password"><p><button class="btn s" id="go">Log in</button></p><div class="err" id="lerr"></div></div>
+<div class="sec hide" id="app">
+<div class="tabs"><button class="chip on" data-t="tp">Products</button><button class="chip" data-t="to">Orders</button><button class="chip" data-t="ts">Shop settings</button></div>
+<div id="tp"><div class="fm" id="pf">
+<input id="f_name" placeholder="Product name"><input id="f_cat" placeholder="Category (e.g. Food)"><input id="f_price" type="number" min="0" placeholder="Price (ETB)"><input id="f_stock" type="number" min="0" placeholder="Stock (empty = unlimited)">
+<input id="f_emoji" placeholder="Emoji (e.g. ☕)"><input id="f_image" placeholder="Image link (https://...)"><textarea class="w" id="f_desc" rows="2" placeholder="Description"></textarea>
+<label class="w"><input type="checkbox" id="f_active" checked style="width:auto"> Visible in shop</label>
+<div class="w"><button class="btn s" id="psave">Add product</button> <button class="btn o hide" id="pcancel">Cancel edit</button> <span class="err" id="perr"></span></div></div>
+<table><thead><tr><th></th><th>Name</th><th>Price</th><th>Stock</th><th>Shown</th><th></th></tr></thead><tbody id="plist"></tbody></table></div>
+<div id="to" class="hide"></div>
+<div id="ts" class="hide"><div class="fm" id="sf"></div><button class="btn s" id="ssave">Save settings</button> <span id="sok" class="st"></span></div>
+</div><script src="/admin.js"></script></body></html>
