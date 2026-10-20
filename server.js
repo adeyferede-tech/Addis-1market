@@ -10,7 +10,7 @@ app.use(helmet({ contentSecurityPolicy: { directives: {
   defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'", "'unsafe-inline'"],
   imgSrc: ["'self'", 'data:', 'https:'], frameSrc: ['https://www.openstreetmap.org'],
   connectSrc: ["'self'"], objectSrc: ["'none'"], upgradeInsecureRequests: BASE.startsWith('https') ? [] : null } } }));
-app.use(express.json({ limit: '50kb' }));
+app.use((q, s, n) => express.json({ limit: q.path === '/api/admin/upload' ? '1mb' : '50kb' })(q, s, n));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------- admin auth (signed httpOnly cookie, 12h) ----------
@@ -123,6 +123,19 @@ app.get('/api/admin/products', guard, async (_, s) => s.json(await db.products()
 app.post('/api/admin/products', guard, async (q, s) => { const p = clean(q.body || {}); if (!p.name || !p.price) return s.status(400).json({ error: 'Name and price are required' }); s.json(await db.addProduct(p)); });
 app.put('/api/admin/products/:id', guard, async (q, s) => { const p = clean(q.body || {}); if (!p.name || !p.price) return s.status(400).json({ error: 'Name and price are required' }); s.json(await db.updProduct(q.params.id, p)); });
 app.delete('/api/admin/products/:id', guard, async (q, s) => { await db.delProduct(q.params.id); s.json({ ok: true }); });
+app.post('/api/admin/upload', guard, async (q, s) => {
+  try {
+    if (!E.SUPABASE_URL || !E.SUPABASE_SERVICE_KEY) return s.status(400).json({ error: 'Image upload needs Supabase set up' });
+    const m = /^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(q.body?.data || '');
+    if (!m) return s.status(400).json({ error: 'Send a JPG, PNG or WebP image' });
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > 900000) return s.status(400).json({ error: 'Image too large' });
+    const name = Date.now().toString(36) + crypto.randomBytes(4).toString('hex') + '.' + (m[1] === 'jpeg' ? 'jpg' : m[1]);
+    const r = await fetch(`${E.SUPABASE_URL}/storage/v1/object/products/${name}`, { method: 'POST', headers: { apikey: E.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + E.SUPABASE_SERVICE_KEY, 'Content-Type': 'image/' + m[1] }, body: buf });
+    if (!r.ok) return s.status(502).json({ error: 'Storage error: ' + (await r.text()).slice(0, 120) });
+    s.json({ url: `${E.SUPABASE_URL}/storage/v1/object/public/products/${name}` });
+  } catch (e) { console.error(e); s.status(500).json({ error: 'Upload failed' }); }
+});
 app.get('/api/admin/orders', guard, async (_, s) => s.json(await db.orders()));
 app.post('/api/admin/orders/:id/status', guard, async (q, s) => { if (!['new', 'paid', 'done', 'cancelled'].includes(q.body?.status)) return s.status(400).json({ error: 'Bad status' }); await db.updOrder(q.params.id, q.body.status); s.json({ ok: true }); });
 app.get('/api/admin/settings', guard, async (_, s) => s.json(await db.getSettings()));
