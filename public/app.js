@@ -79,20 +79,22 @@ document.addEventListener('change',e=>{if(e.target.name!=='pay')return;const x=e
   if(x==='telebirr'||x==='cbe'){const to=x==='telebirr'?S.telebirr:S.cbe;m.classList.remove('hide');m.innerHTML=`Send <b>${fmt(sum())}</b> to <b>${esc(to||'(ask the shop)')}</b>, then enter the reference:<br><input id="f_ref" placeholder="Transaction reference" style="margin-top:8px">`}else m.classList.add('hide')});
 $('#q').addEventListener('input',render);init();
 
-// ---- Image viewer: click any product photo to open; zoom in/out, drag, pinch, wheel ----
+// ---- Image viewer: size is computed from the real photo ratio, so it can never stretch ----
 (()=>{
   const lb=document.createElement('div');lb.id='lb';lb.className='hide';
   lb.innerHTML='<div class="lbt"><span id="lbn"></span><span><button data-z="-">−</button><button data-z="0">Reset</button><button data-z="+">+</button><button data-z="x">✕</button></span></div><div class="lbs"><img id="lbi" alt=""></div><div class="lbh">Scroll, pinch or use + / − to zoom. Drag to move. Double-tap to zoom.</div>';
   document.body.appendChild(lb);
   const im=lb.querySelector('#lbi'),st=lb.querySelector('.lbs'),pts=new Map();
-  let k=1,x=0,y=0,d0=1,k0=1;
-  const apply=()=>{im.style.transform=`translate(${x}px,${y}px) scale(${k})`};
-  const zoom=f=>{k=Math.min(6,Math.max(.5,k*f));if(k<=1){x=y=0}apply()};
-  const reset=()=>{k=1;x=y=0;apply()};
+  let k=1,x=0,y=0,d0=1,k0=1,bw=0,bh=0;
+  const fit=()=>{const nw=im.naturalWidth||1,nh=im.naturalHeight||1,r=Math.min(st.clientWidth*.96/nw,st.clientHeight*.96/nh);bw=nw*r;bh=nh*r};
+  const apply=()=>{im.style.width=bw*k+'px';im.style.height=bh*k+'px';im.style.transform=`translate(calc(-50% + ${x}px),calc(-50% + ${y}px))`};
+  const zoom=f=>{k=Math.min(6,Math.max(.25,k*f));if(k<=1)x=y=0;apply()};
+  const reset=()=>{k=1;x=y=0;fit();apply()};
   const close=()=>{lb.classList.add('hide');document.body.style.overflow='';pts.clear()};
   const dist=()=>{const[a,b]=[...pts.values()];return Math.hypot(a.x-b.x,a.y-b.y)||1};
   document.addEventListener('click',e=>{const i=e.target.closest('.pic img');if(!i)return;
-    im.src=i.src;lb.querySelector('#lbn').textContent=i.alt||'';reset();lb.classList.remove('hide');document.body.style.overflow='hidden'});
+    lb.querySelector('#lbn').textContent=i.alt||'';lb.classList.remove('hide');document.body.style.overflow='hidden';
+    im.onload=reset;im.src=i.src;if(im.complete&&im.naturalWidth)reset()});
   lb.addEventListener('click',e=>{const z=e.target.dataset&&e.target.dataset.z;
     if(z==='+')zoom(1.4);if(z==='-')zoom(1/1.4);if(z==='0')reset();if(z==='x')close()});
   st.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.15:1/1.15)},{passive:false});
@@ -100,9 +102,10 @@ $('#q').addEventListener('input',render);init();
   st.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pts.size===2){d0=dist();k0=k}});
   st.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;
     const n={x:e.clientX,y:e.clientY};
-    if(pts.size===2){pts.set(e.pointerId,n);k=Math.min(6,Math.max(.5,k0*dist()/d0));apply();return}
+    if(pts.size===2){pts.set(e.pointerId,n);k=Math.min(6,Math.max(.25,k0*dist()/d0));apply();return}
     if(k>1){x+=n.x-p.x;y+=n.y-p.y;apply()}pts.set(e.pointerId,n)});
   ['pointerup','pointercancel','pointerleave'].forEach(t=>st.addEventListener(t,e=>pts.delete(e.pointerId)));
+  window.addEventListener('resize',()=>{if(!lb.classList.contains('hide')){fit();apply()}});
   document.addEventListener('keydown',e=>{if(lb.classList.contains('hide'))return;
     if(e.key==='Escape')close();if(e.key==='+'||e.key==='=')zoom(1.4);if(e.key==='-')zoom(1/1.4)});
 })();

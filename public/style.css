@@ -56,3 +56,4 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px;borde
 .lbs{flex:1;overflow:hidden;display:grid;place-items:center;touch-action:none}
 .lbs img{max-width:96vw;max-height:78vh;object-fit:contain;transition:transform .08s;user-select:none;-webkit-user-drag:none}
 .lbh{text-align:center;font-size:12px;opacity:.7;padding:8px}
+.lbs{position:relative}.lbs img{position:absolute;left:50%;top:50%;max-width:none;max-height:none;width:auto;height:auto;transition:none;object-fit:fill}
