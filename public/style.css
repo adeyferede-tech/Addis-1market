@@ -13,7 +13,7 @@ h1,h2,h3{font-family:Georgia,serif;margin:0}button,input,select,textarea{font:in
 .chip{padding:8px 14px;border:1px solid var(--l);background:#fff;border-radius:20px;cursor:pointer}.chip.on{background:var(--g);color:#fff;border-color:var(--g)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px}
 .card{background:#fff;border:1px solid var(--l);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
-.pic{height:170px;display:grid;place-items:center;font-size:70px;background:#f1efe7}.pic img{width:100%;height:100%;object-fit:cover}
+.pic{position:relative;height:190px;display:grid;place-items:center;font-size:70px;background:#f1efe7}.pic img{width:100%;height:100%;object-fit:cover}
 .info{padding:14px;display:flex;flex-direction:column;gap:5px;flex:1}.info small{color:var(--m)}
 .info p{margin:0;font-size:13px;color:var(--m);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .price{font-weight:bold;color:var(--g2);font-size:18px}.tag{color:var(--r);font-size:12px;font-weight:bold}
@@ -39,3 +39,4 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px;borde
 .fm{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;background:#fff;border:1px solid var(--l);padding:16px;border-radius:12px;margin-bottom:20px}.fm .w{grid-column:1/-1}
 .ord{background:#fff;border:1px solid var(--l);border-radius:10px;padding:12px;margin-bottom:10px;white-space:pre-line;font-size:14px}
 .st{font-weight:bold;color:var(--g2)}.thumb{width:40px;height:40px;object-fit:cover;border-radius:6px}.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}.lg{max-width:360px}
+.cap{position:absolute;top:0;left:0;right:0;padding:10px 12px 30px;background:linear-gradient(to bottom,rgba(10,30,22,.88),rgba(10,30,22,0));color:#fff;font-size:16px}.cap h3{font-size:16px;line-height:1.2;color:#fff;margin:2px 0 0}.cap small{color:#f2b705;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
