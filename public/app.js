@@ -12,18 +12,17 @@ async function init(){
   for(const id in cart)if(!P.find(p=>p.id==id))delete cart[id];
   const nm=S.shopName||'Our Shop';document.title=nm;$('#brand').textContent=nm;$('#hTag').textContent=S.tagline||'';
   if(S.announcement){$('#ann').textContent=S.announcement;$('#ann').classList.remove('hide')}
-  $('#foot').textContent='© '+new Date().getFullYear()+' '+nm;$('#fname').textContent=nm;$('#fabout').textContent=S.about||'';$('#fcall').textContent=S.phone?'Call us: '+S.phone:'';
+  $('#foot').textContent='© '+new Date().getFullYear()+' '+nm;$('#fname').textContent=nm;$('#aboutT').textContent=S.about||`Welcome to ${nm}. Contact us if you have any question about our products.`;$('#fabout').textContent=S.about||'';$('#fcall').textContent=S.phone?'Call us: '+S.phone:'';
   $('#ddm').innerHTML=[...new Set(P.map(p=>p.cat))].map(c=>`<button data-c="${esc(c)}">${esc(c)}</button>`).join('');
-  let v='';if(S.about)v+=`<p>${esc(S.about)}</p>`;
+  let v='';
   if(S.address)v+=`<p><b>Address:</b> ${esc(S.address)}</p>`;if(S.hours)v+=`<p><b>Hours:</b> ${esc(S.hours)}</p>`;
   if(S.phone)v+=`<p><b>Phone:</b> <a href="tel:${esc(S.phone.replace(/[^\d+]/g,''))}">${esc(S.phone)}</a></p>`;
   if(S.email)v+=`<p><b>Email:</b> <a href="mailto:${esc(S.email)}">${esc(S.email)}</a></p>`;
   const wa=(S.whatsapp||'').replace(/\D/g,''),soc=[['Telegram',S.telegram],['Facebook',S.facebook],['Instagram',S.instagram],['TikTok',S.tiktok],['WhatsApp',wa&&'https://wa.me/'+wa]].filter(x=>x[1]);
   $('#fsoc').innerHTML=soc.map(([l,u])=>A(u,l,'o')).join('');if(soc.length)v+=`<div class="soc">${soc.map(([l,u])=>A(u,l,'s')).join('')}</div>`;
-  $('#vinfo').innerHTML=v;
+  $('#vinfo').innerHTML=v||'<p>Contact details will be added soon.</p>';
   const la=parseFloat(S.lat),lo=parseFloat(S.lng);
   if(isFinite(la)&&isFinite(lo))$('#vmap').innerHTML=`<iframe title="Map" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${lo-.01},${la-.006},${lo+.01},${la+.006}&layer=mapnik&marker=${la},${lo}"></iframe><p>${A(`https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`,'Get directions','')}</p>`;
-  else $('#visit').classList.add('hide');
   render();
 }
 function view(){
@@ -83,7 +82,7 @@ const closeP=()=>{$('#panel').classList.remove('open');$('#shade').classList.rem
 document.addEventListener('click',e=>{const t=e.target.closest('button,a,[data-qv]')||e.target,d=t.dataset||{};
   if(d.c!==undefined){cat=d.c;page=1;$('#nav').classList.remove('open');render()}
   if(d.s){sort=d.s;$('#sort').value=d.s;page=1;render();$('#shop').scrollIntoView()}
-  if(d.qv)openQV(d.qv);if(t.id==='qv'||d.qx)closeQV();
+  if(t.classList&&t.classList.contains('nl')&&!t.parentElement.classList.contains('dd'))$('#nav').classList.remove('open');if(d.qv)openQV(d.qv);if(t.id==='qv'||d.qx)closeQV();
   if(d.pg){page=+d.pg;render();$('#shop').scrollIntoView()}if(t.id==='pgo')rr();
   if(d.a){cart[d.a]=(cart[d.a]||0)+1;save();closeQV();open()}
   if(d.p){cart[d.p]++;save()}
