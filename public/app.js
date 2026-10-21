@@ -29,7 +29,7 @@ function render(){
   $('#cats').innerHTML=cats.map(c=>`<button class="chip ${c===cat?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
   $('#grid').innerHTML=P.filter(p=>(cat==='All'||p.cat===cat)&&p.name.toLowerCase().includes(t)).map(p=>{
     const out=p.stock!=null&&p.stock<=0;
-    return `<div class="card"><div class="pic">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.emoji)}<div class="cap"><small>${esc(p.cat)}</small><h3>${esc(p.name)}</h3></div></div><div class="info">${p.description?`<p>${esc(p.description)}</p>`:''}<div class="price">${fmt(p.price)}</div>${out?'<div class="tag">Sold out</div>':p.stock!=null&&p.stock<=5?`<div class="tag">Only ${p.stock} left</div>`:''}<button class="btn s" data-a="${p.id}" ${out?'disabled':''}>${out?'Sold out':'Add to cart'}</button></div></div>`}).join('')||'<p>No products found.</p>';
+    return `<div class="card"><div class="pic">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.emoji)}</div><div class="capbox"><small>${esc(p.cat)}</small><h3>${esc(p.name)}</h3>${p.description?`<p>${esc(p.description)}</p>`:''}<div class="price">${fmt(p.price)}</div>${out?'<div class="tag">Sold out</div>':p.stock!=null&&p.stock<=5?`<div class="tag">Only ${p.stock} left</div>`:''}</div><div class="buy"><button class="btn s" data-a="${p.id}" ${out?'disabled':''}>${out?'Sold out':'Add to cart'}</button></div></div>`}).join('')||'<p>No products found.</p>';
   $('#cnt').textContent=Object.values(cart).reduce((a,b)=>a+b,0);
   if(step==='cart')drawCart();
 }
