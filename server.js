@@ -34,28 +34,41 @@ app.post('/api/admin/logout', (q, s) => { s.clearCookie('adm'); s.json({ ok: tru
 // ---------- helpers ----------
 const clean = b => {
   const n = (v, m) => String(v ?? '').trim().slice(0, m), img = n(b.image, 500);
-  return { name: n(b.name, 100), cat: n(b.cat, 40) || 'General', price: Math.max(0, +b.price || 0), emoji: n(b.emoji, 4) || '🛍️',
+  return { name: n(b.name, 100), cat: n(b.cat, 40) || 'General', price: Math.max(0, +b.price || 0), old_price: +b.old_price > Math.max(0, +b.price || 0) ? +b.old_price : null, emoji: n(b.emoji, 4) || '🛍️',
     image: /^https:\/\//.test(img) ? img : '', description: n(b.description, 600),
     stock: b.stock === '' || b.stock == null ? null : Math.max(0, Math.floor(+b.stock) || 0), active: b.active !== false };
 };
-const KEYS = ['shopName', 'tagline', 'about', 'phone', 'email', 'address', 'hours', 'telegram', 'facebook', 'instagram', 'tiktok', 'whatsapp', 'telebirr', 'cbe', 'lat', 'lng'];
+const KEYS = ['shopName', 'tagline', 'about', 'phone', 'email', 'address', 'hours', 'telegram', 'facebook', 'instagram', 'tiktok', 'whatsapp', 'announcement', 'telebirr', 'cbe', 'lat', 'lng'];
 const URLK = ['telegram', 'facebook', 'instagram', 'tiktok'];
 
-async function notify(text, subject, extraTo) {
+async function mailOut(to, subject, text, replyTo) {
+  if (E.RESEND_API_KEY) {
+    const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${E.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: E.MAIL_FROM || 'Addis Market <onboarding@resend.dev>', to: [to], subject, text, ...(replyTo ? { reply_to: replyTo } : {}) }) });
+    if (!r.ok) console.error('Resend:', await r.text());
+  } else {
+    await nodemailer.createTransport({ service: 'gmail', auth: { user: E.GMAIL_USER, pass: E.GMAIL_APP_PASSWORD } }).sendMail({ from: E.GMAIL_USER, to, subject, text, replyTo });
+  }
+}
+
+// Owner alert: Telegram + email to the shop owner
+async function notify(text, subject) {
   try {
     const r = await fetch(`https://api.telegram.org/bot${E.TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: E.TELEGRAM_CHAT_ID, text }) });
     const d = await r.json(); if (!d.ok) console.error('Telegram:', JSON.stringify(d));
   } catch (e) { console.error('Telegram ERROR:', e.message); }
+  try { await mailOut(E.GMAIL_USER, subject, text); } catch (e) { console.error('Email ERROR:', e.message); }
+}
+
+// Customer receipt. With Resend it is sent only after MAIL_FROM (a verified domain) is set.
+async function receipt(o, status) {
+  if (!o.email || (E.RESEND_API_KEY && !E.MAIL_FROM)) return;
   try {
-    if (E.RESEND_API_KEY) {
-      const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${E.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: E.MAIL_FROM || 'Addis Market <onboarding@resend.dev>', to: E.MAIL_FROM ? [E.GMAIL_USER, extraTo].filter(Boolean) : [E.GMAIL_USER], subject, text }) });
-      if (!r.ok) console.error('Resend:', await r.text());
-    } else {
-      await nodemailer.createTransport({ service: 'gmail', auth: { user: E.GMAIL_USER, pass: E.GMAIL_APP_PASSWORD } })
-        .sendMail({ from: E.GMAIL_USER, to: [E.GMAIL_USER, extraTo].filter(Boolean).join(','), subject, text });
-    }
-  } catch (e) { console.error('Email ERROR:', e.message); }
+    const s = await db.getSettings(), shop = s.shopName || 'Our Shop';
+    const pay = status === 'paid' ? 'PAID. Thank you!' : o.payment === 'cod' ? 'Cash on delivery' : o.payment === 'chapa' ? 'Awaiting online payment' : `Transfer reference ${o.ref} (we will confirm it shortly)`;
+    const text = `Thank you for your order at ${shop}!\n\nOrder: ${o.id}\n\n${o.list}\n\nTotal: ${o.total} ETB\nPayment: ${pay}\n\nDelivery to: ${o.name}\n${o.address}\nPhone: ${o.phone}\n\nQuestions? Reply to this email${s.phone ? ' or call ' + s.phone : ''}.`;
+    await mailOut(o.email, `Your order ${o.id} at ${shop}`, text, s.email || E.GMAIL_USER);
+  } catch (e) { console.error('Receipt ERROR:', e.message); }
 }
 
 // ---------- first-run sample data ----------
@@ -100,9 +113,11 @@ app.post('/api/order', orderLimit, async (q, s) => {
       checkout_url = (await r.json())?.data?.checkout_url || null;
       if (!checkout_url) return s.status(502).json({ error: 'Online payment unavailable. Choose another method.' });
     }
-    await db.addOrder({ id, name: t(name, 80), phone: t(phone, 30), address: t(address, 300), payment, ref: t(ref, 60), total, list, gps: loc });
+    const order = { id, name: t(name, 80), phone: t(phone, 30), email: mail, address: t(address, 300), payment, ref: t(ref, 60), total, list, gps: loc };
+    await db.addOrder(order);
     for (const l of lines) if (l.p.stock != null) await db.updProduct(l.p.id, { stock: Math.max(0, l.p.stock - l.n) });
-    await notify(`${payment === 'chapa' ? '⏳ AWAITING PAYMENT' : '🛒 New order'} ${id}\n\n${body}`, `Order ${id} - ${total} ETB`, mail);
+    await notify(`${payment === 'chapa' ? '⏳ AWAITING PAYMENT' : '🛒 New order'} ${id}\n\n${body}`, `Order ${id} - ${total} ETB`);
+    if (payment !== 'chapa') await receipt(order);
     s.json({ ok: true, id, total, checkout_url });
   } catch (e) { console.error(e); s.status(500).json({ error: 'Server error' }); }
 });
@@ -114,7 +129,7 @@ app.all('/api/chapa-callback', async (q, s) => {
     const tx = String(q.query.trx_ref || q.query.tx_ref || q.body?.tx_ref || q.body?.trx_ref || '');
     if (!/^ORD-[A-Z0-9]+$/.test(tx) || paid.has(tx)) return;
     const d = await (await fetch(`https://api.chapa.co/v1/transaction/verify/${tx}`, { headers: { Authorization: `Bearer ${E.CHAPA_SECRET_KEY}` } })).json();
-    if (d?.data?.status === 'success') { paid.add(tx); await db.updOrder(tx, 'paid'); await notify(`✅ PAID ${tx}\nAmount: ${d.data.amount} ETB\nCustomer: ${d.data.first_name || '-'}`, `Paid ${tx}`); }
+    if (d?.data?.status === 'success') { paid.add(tx); await db.updOrder(tx, 'paid'); const o = (await db.orders()).find(x => x.id === tx); if (o) await receipt(o, 'paid'); await notify(`✅ PAID ${tx}\nAmount: ${d.data.amount} ETB\nCustomer: ${d.data.first_name || '-'}`, `Paid ${tx}`); }
   } catch (e) { console.error('Chapa verify:', e.message); }
 });
 
