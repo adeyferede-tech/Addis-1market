@@ -6,7 +6,7 @@ const sum=()=>Object.entries(cart).reduce((a,[id,q])=>{const p=P.find(x=>x.id==i
 const save=()=>{try{localStorage.setItem('cart',JSON.stringify(cart))}catch{}render()};
 const A=(u,l,c='o')=>`<a class="btn ${c}" href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`;
 
-let page=1,sort='featured';const PER=12,inS=p=>p.stock==null||p.stock>0,pic=p=>p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`:`<span class="em">${esc(p.emoji)}</span>`,price=p=>`${p.old_price>p.price?`<s>${fmt(p.old_price)}</s> `:''}${fmt(p.price)}`;
+let home=true,page=1,sort='featured';const PER=12,inS=p=>p.stock==null||p.stock>0,pic=p=>p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`:`<span class="em">${esc(p.emoji)}</span>`,price=p=>`${p.old_price>p.price?`<s>${fmt(p.old_price)}</s> `:''}${fmt(p.price)}`;
 async function init(){
   [S,P]=await Promise.all([fetch('/api/settings').then(r=>r.json()).catch(()=>({})),fetch('/api/products').then(r=>r.json()).catch(()=>[])]);
   for(const id in cart)if(!P.find(p=>p.id==id))delete cart[id];
@@ -32,7 +32,7 @@ function view(){
 }
 function render(){
   const a=view(),pages=Math.max(1,Math.ceil(a.length/PER));if(page>pages)page=1;
-  $('#catlist').innerHTML=[['All',P.length],...[...new Set(P.map(p=>p.cat))].map(c=>[c,P.filter(p=>p.cat===c).length])].map(([c,n])=>`<button class="cat ${c===cat?'on':''}" data-c="${esc(c)}">${esc(c==='All'?'All products':c)} <span>(${n})</span></button>`).join('');
+  $('#catlist').innerHTML=[['All',P.length],...[...new Set(P.map(p=>p.cat))].map(c=>[c,P.filter(p=>p.cat===c).length])].map(([c,n])=>`<button class="cat ${c===cat?'on':''}" data-c="${esc(c)}"${c==='All'?' data-all="1"':''}>${esc(c==='All'?'All products':c)} <span>(${n})</span></button>`).join('');
   $('#n_in').textContent=P.filter(inS).length;$('#n_out').textContent=P.filter(p=>!inS(p)).length;
   const title=sort==='new'&&cat==='All'?'New Arrivals':cat==='All'?'All Products':cat;
   $('#ctitle').textContent=title;$('#crumb').textContent=title;$('#pginfo').textContent=`Page ${page} of ${pages}`;
@@ -40,6 +40,7 @@ function render(){
     return `<div class="pc"><div class="pimg" data-qv="${p.id}">${pic(p)}${out?'<b class="bd so">Sold out</b>':p.old_price>p.price?'<b class="bd">Sale</b>':''}<button class="qs" data-qv="${p.id}">Quick Shop</button></div><a class="pt" data-qv="${p.id}">${esc(p.name)}</a><div class="pp">${price(p)}</div></div>`}).join('')||'<p>No products match your filters.</p>';
   $('#pager').innerHTML=pages>1?(page>1?`<button data-pg="${page-1}">« Prev</button>`:'')+Array.from({length:pages},(_,i)=>`<button class="${i+1===page?'on':''}" data-pg="${i+1}">${i+1}</button>`).join('')+(page<pages?`<button data-pg="${page+1}">Next »</button>`:''):'';
   $('#cnt').textContent=Object.values(cart).reduce((a,b)=>a+b,0);
+  homeView();
   if(step==='cart')drawCart();
 }
 function openQV(id){const p=P.find(x=>x.id==id);if(!p)return;const out=!inS(p);
@@ -80,10 +81,10 @@ async function place(){
 const open=()=>{$('#panel').classList.add('open');$('#shade').classList.add('on')};
 const closeP=()=>{$('#panel').classList.remove('open');$('#shade').classList.remove('on');step='cart';drawCart()};
 document.addEventListener('click',e=>{const t=e.target.closest('button,a,[data-qv]')||e.target,d=t.dataset||{};
-  if(d.c!==undefined){cat=d.c;page=1;$('#nav').classList.remove('open');render()}
-  if(d.s){sort=d.s;$('#sort').value=d.s;page=1;render();$('#shop').scrollIntoView()}
+  if(d.c!==undefined){cat=d.c;page=1;home=d.c==='All'&&!d.all;$('#nav').classList.remove('open');render()}
+  if(d.s){home=false;sort=d.s;$('#sort').value=d.s;page=1;render();$('#shop').scrollIntoView()}
   if(t.classList&&t.classList.contains('nl')&&!t.parentElement.classList.contains('dd'))$('#nav').classList.remove('open');if(d.qv)openQV(d.qv);if(t.id==='qv'||d.qx)closeQV();
-  if(d.pg){page=+d.pg;render();$('#shop').scrollIntoView()}if(t.id==='pgo')rr();
+  if(d.pg){home=false;page=+d.pg;render();$('#shop').scrollIntoView()}if(t.id==='pgo')rr();
   if(d.a){cart[d.a]=(cart[d.a]||0)+1;save();closeQV();open()}
   if(d.p){cart[d.p]++;save()}
   if(d.m){if(--cart[d.m]<=0)delete cart[d.m];save()}
@@ -93,7 +94,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button,a,[data-q
 });
 document.addEventListener('change',e=>{if(e.target.name!=='pay')return;const x=e.target.value,m=$('#manual');
   if(x==='telebirr'||x==='cbe'){const to=x==='telebirr'?S.telebirr:S.cbe;m.classList.remove('hide');m.innerHTML=`Send <b>${fmt(sum())}</b> to <b>${esc(to||'(ask the shop)')}</b>, then enter the reference:<br><input id="f_ref" placeholder="Transaction reference" style="margin-top:8px">`}else m.classList.add('hide')});
-const rr=()=>{page=1;render()};
+const rr=()=>{home=false;page=1;render()};
 $('#q').addEventListener('input',rr);$('#sort').addEventListener('change',e=>{sort=e.target.value;rr()});
 ['#av_in','#av_out'].forEach(s=>$(s).addEventListener('change',rr));
 $('#burger').addEventListener('click',()=>$('#nav').classList.toggle('open'));$('#ftog').addEventListener('click',()=>$('#side').classList.toggle('open'));
@@ -129,3 +130,15 @@ init();
   document.addEventListener('keydown',e=>{if(lb.classList.contains('hide'))return;
     if(e.key==='Escape')close();if(e.key==='+'||e.key==='=')zoom(1.4);if(e.key==='-')zoom(1/1.4)});
 })();
+
+// ---- Home page (hero, trust bar, product rows, collection tiles) ----
+const pcard=p=>{const out=!inS(p);return `<div class="pc"><div class="pimg" data-qv="${p.id}">${pic(p)}${out?'<b class="bd so">Sold out</b>':p.old_price>p.price?'<b class="bd">Sale</b>':''}<button class="qs" data-qv="${p.id}">Quick Shop</button></div><a class="pt" data-qv="${p.id}">${esc(p.name)}</a><div class="pp">${price(p)}</div></div>`};
+function homeView(){
+  $('#home').classList.toggle('hide',!home);$('#band').classList.toggle('hide',home);$('#shop').classList.toggle('hide',home);
+  if(!home)return;
+  const sale=P.filter(p=>p.old_price>p.price),pct=Math.max(0,...sale.map(p=>Math.round(100-p.price/p.old_price*100))),cats=[...new Set(P.map(p=>p.cat))];
+  $('#hh').textContent=pct?`Up to ${pct}% off`:(S.shopName||'Welcome');$('#hp').textContent=S.tagline||'';
+  const row=(t,l,at)=>l.length?`<section class="hs"><div class="hh"><h2>${esc(t)}</h2>${at?`<button class="btn o" ${at}>View all</button>`:''}</div><div class="hrow">${l.map(pcard).join('')}</div></section>`:'';
+  $('#hrows').innerHTML=row('Featured',[...P].sort((x,y)=>x.id-y.id).slice(0,8),'data-c="All" data-all="1"')+row('On sale',sale.slice(0,8),'')+row('New arrivals',[...P].sort((x,y)=>y.id-x.id).slice(0,8),'data-s="new"')+cats.map(c=>row(c,P.filter(p=>p.cat===c).slice(0,8),`data-c="${esc(c)}"`)).join('');
+  $('#htiles').innerHTML=cats.map(c=>{const p=P.find(x=>x.cat===c&&x.image);return `<button class="tile" data-c="${esc(c)}"${p?` style="background-image:url('${esc(p.image)}')"`:''}><span>${esc(c)}</span></button>`}).join('');
+}

@@ -90,3 +90,15 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px;borde
 @media(max-width:860px){.cl{grid-template-columns:1fr}.side{display:none}.side.open{display:block}#ftog{display:inline-block}.burger{display:block}.top{position:sticky}.top .brand{flex:1}
 .nav{display:none;position:absolute;top:100%;left:0;right:0;background:var(--g);flex-direction:column;padding:8px 5vw;z-index:30}.nav.open{display:flex}.ddm{position:static;box-shadow:none;display:block;background:transparent;color:#fff;padding:0 0 0 14px}.ddm button{color:#fff}.ddm button:hover{background:#ffffff22}.qvg{grid-template-columns:1fr}}
 html{scroll-behavior:smooth;scroll-padding-top:72px}
+
+/* light header like the reference layout */
+.top{background:#fff;color:var(--ink);border-bottom:1px solid var(--l)}.top .brand{color:var(--g)}
+.nl,.burger{color:var(--ink)}.nl:hover{color:var(--g2)}
+.hero{padding:64px 5vw 56px;text-align:center}.hero h1{max-width:none;margin:0 auto}.hero p{margin:14px auto 24px}
+.trust{display:flex;gap:10px 28px;justify-content:center;flex-wrap:wrap;padding:14px 5vw;background:#fff;border-bottom:1px solid var(--l);font-size:14px}
+.hs{padding:34px 5vw 6px}.hh{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.hh h2{font-size:26px}
+.hrow{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(200px,22%);gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:12px}.hrow .pc{scroll-snap-align:start}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:30px}
+.tile{position:relative;aspect-ratio:1;border:0;border-radius:10px;background:var(--g) center/cover;cursor:pointer;overflow:hidden;color:#fff}
+.tile span{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 12px;background:linear-gradient(transparent,#000a);font:bold 16px Georgia,serif;text-align:left}
+@media(max-width:860px){.hrow{grid-auto-columns:minmax(160px,62%)}.nav{background:#fff}.ddm button{color:var(--ink)}.ddm button:hover{background:var(--bg)}}
